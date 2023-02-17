@@ -28,8 +28,8 @@
 ### 🏆 Github Stats:
 
 <div>
-<img alt="xbsheng's Github Stats" src="https://github-readme-stats.vercel.app/api?username=xbsheng&hide=stars&show_icons=true&hide_border=true" width="60%" height=""/>
-<img alt="xbsheng's Top Languages Stats" src="https://github-readme-stats.vercel.app/api/top-langs/?username=xbsheng&hide=smalltalk&layout=compact&hide_border=true" width="60%"/>
+<img alt="xbsheng's Github Stats" src="https://github-readme-stats-xbsheng.vercel.app/api?username=xbsheng&hide=stars&count_private=true&include_all_commits=true&show_icons=true&hide_border=true" width="60%" height=""/>
+<img alt="xbsheng's Top Languages Stats" src="https://github-readme-stats-xbsheng.vercel.app/api/top-langs/?username=xbsheng&count_private=true&include_all_commits=true&hide=smalltalk&layout=compact&hide_border=true" width="60%"/>
 </div>
 
 ### 👀 visitor count:
