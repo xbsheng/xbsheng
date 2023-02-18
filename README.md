@@ -32,7 +32,7 @@
 <img alt="xbsheng's Top Languages Stats" src="https://github-readme-stats-xbsheng.vercel.app/api/top-langs/?username=xbsheng&count_private=true&include_all_commits=true&hide=smalltalk&layout=compact&hide_border=true" width="60%"/>
 </div>
 
-### 👀 visitor count:
+### 👀 Visitor Count:
 
 <img src="https://profile-counter.glitch.me/xbsheng/count.svg" alt="Hello world" />
 
