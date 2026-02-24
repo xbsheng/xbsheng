@@ -32,7 +32,6 @@ jobs:
 
       # generate a 3D animation of the github contributions graph, and set it as the github profile README
       # output dir: dist (moved from profile-3d-contrib)
-      - uses: actions/checkout@v4
       - uses: yoshi389111/github-profile-3d-contrib@latest
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -40,6 +39,7 @@ jobs:
 
       - name: Move 3D contrib files to dist
         run: |
+          mkdir -p dist
           if [ -d profile-3d-contrib ]; then
             mv profile-3d-contrib/* dist/ 2>/dev/null || true
           fi
