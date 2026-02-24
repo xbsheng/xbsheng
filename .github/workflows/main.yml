@@ -30,6 +30,21 @@ jobs:
             dist/github-contribution-grid-snake.svg
             dist/github-contribution-grid-snake-dark.svg?palette=github-dark
 
+      # generate a 3D animation of the github contributions graph, and set it as the github profile README
+      # output dir: dist (moved from profile-3d-contrib)
+      - uses: actions/checkout@v4
+      - uses: yoshi389111/github-profile-3d-contrib@latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          USERNAME: ${{ github.repository_owner }}
+
+      - name: Move 3D contrib files to dist
+        run: |
+          mkdir -p dist
+          if [ -d profile-3d-contrib ]; then
+            mv profile-3d-contrib/* dist/ 2>/dev/null || true
+          fi
+
       # push the content of <build_dir> to a branch
       # the content will be available at https://raw.githubusercontent.com/<github_user>/<repository>/<target_branch>/<file> , or as github page
       - name: push github-contribution-grid-snake.svg to the output branch
