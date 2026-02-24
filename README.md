@@ -25,6 +25,12 @@
 - ⚡️ Fun-Fact: I have a degree in civil engineering;
 - 📫 How to reach me: murillo_comino@hotmail.com; -->
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/xbsheng/xbsheng/output/github-contribution-grid-snake-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/xbsheng/xbsheng/output/github-contribution-grid-snake.svg">
+  <img alt="github contribution grid snake animation" src="https://raw.githubusercontent.com/xbsheng/xbsheng/output/github-contribution-grid-snake.svg">
+</picture>
+
 ### 🏆 Github Stats:
 
 <div>
