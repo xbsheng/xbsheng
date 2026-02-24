@@ -359,7 +359,7 @@
       {
         "top": {
           "backgroundColor": "#2a2a2a",
-          "foregroundColor": "#555555",
+          "foregroundColor": "#aaaaaa",
           "width": 32,
           "bitmap": [
             "0x00000000",
@@ -426,7 +426,7 @@
       {
         "top": {
           "backgroundColor": "hsl(125, 52%, 30%)",
-          "foregroundColor": "hsl(125, 52%, 80%)",
+          "foregroundColor": "hsl(125, 52%, 10%)",
           "width": 32,
           "bitmap": [
             "0x00000000",
@@ -493,7 +493,7 @@
       {
         "top": {
           "backgroundColor": "hsl(242, 100%, 35%)",
-          "foregroundColor": "hsl(242, 100%, 85%)",
+          "foregroundColor": "hsl(242, 100%, 16%)",
           "width": 32,
           "bitmap": [
             "0x00000000",
@@ -560,7 +560,7 @@
       {
         "top": {
           "backgroundColor": "hsl(48, 100%, 30%)",
-          "foregroundColor": "hsl(48, 100%, 85%)",
+          "foregroundColor": "hsl(48, 100%, 15%)",
           "width": 32,
           "bitmap": [
             "0x00000000",
@@ -627,7 +627,7 @@
       {
         "top": {
           "backgroundColor": "hsl(350, 100%, 30%)",
-          "foregroundColor": "hsl(350, 100%, 85%)",
+          "foregroundColor": "hsl(350, 100%, 15%)",
           "width": 32,
           "bitmap": [
             "0x00000000",
