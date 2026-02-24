@@ -40,7 +40,6 @@ jobs:
 
       - name: Move 3D contrib files to dist
         run: |
-          mkdir -p dist
           if [ -d profile-3d-contrib ]; then
             mv profile-3d-contrib/* dist/ 2>/dev/null || true
           fi
