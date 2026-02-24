@@ -2,7 +2,7 @@
   {
     "type": "bitmap",
     "fileName": "profile-3d-contrib-gitblock.svg",
-    "backgroundColor": "#ffffff",
+    "backgroundColor": "transparent",
     "foregroundColor": "#00000f",
     "strongColor": "#111133",
     "weakColor": "gray",
@@ -349,7 +349,7 @@
   {
     "type": "bitmap",
     "fileName": "profile-3d-contrib-gitblock-dark.svg",
-    "backgroundColor": "#000000",
+    "backgroundColor": "transparent",
     "foregroundColor": "#ffffff",
     "strongColor": "#ffffff",
     "weakColor": "#666666",
