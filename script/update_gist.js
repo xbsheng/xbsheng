@@ -34,7 +34,8 @@ async function getCommitTimes() {
 
     for (const event of events) {
       if (event.type === 'PushEvent') {
-        const commitCount = event.payload.commits.length
+        const commits = event.payload?.commits || []
+        const commitCount = commits.length
         stats.total += commitCount
 
         // Convert UTC time to Beijing Time
