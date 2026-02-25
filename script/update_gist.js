@@ -19,39 +19,43 @@ const octokit = new Octokit({
  */
 async function getCommitTimes() {
   try {
-    const { data: events } = await octokit.activity.listPublicEventsForUser({
-      username: GH_USERNAME,
-      per_page: 100,
-    })
-
     const stats = {
-      morning: 0, // Beijing Time 6-12 AM
-      daytime: 0, // Beijing Time 12-6 PM
-      evening: 0, // Beijing Time 6-12 PM
-      night: 0, // Beijing Time 12-6 AM
+      morning: 0,
+      daytime: 0,
+      evening: 0,
+      night: 0,
       total: 0,
     }
 
-    for (const event of events) {
-      if (event.type === 'PushEvent') {
-        const commits = event.payload?.commits || []
-        const commitCount = commits.length
-        stats.total += commitCount
+    // Paginate through events (GitHub Events API: max 10 pages, 100 per page, 300 events total)
+    for (let page = 1; page <= 3; page++) {
+      const { data: events } = await octokit.activity.listEventsForAuthenticatedUser({
+        username: GH_USERNAME,
+        per_page: 100,
+        page,
+      })
 
-        // Convert UTC time to Beijing Time
-        const utcTime = new Date(event.created_at)
-        const beijingTime = utcToZonedTime(utcTime, TIME_ZONE)
-        const hour = beijingTime.getHours()
+      if (events.length === 0) break
 
-        // Count by Beijing Time hour
-        if (hour >= 6 && hour < 12) {
-          stats.morning += commitCount
-        } else if (hour >= 12 && hour < 18) {
-          stats.daytime += commitCount
-        } else if (hour >= 18 && hour < 24) {
-          stats.evening += commitCount
-        } else {
-          stats.night += commitCount
+      for (const event of events) {
+        if (event.type === 'PushEvent') {
+          const commits = event.payload?.commits || []
+          const commitCount = commits.length
+          stats.total += commitCount
+
+          const utcTime = new Date(event.created_at)
+          const beijingTime = utcToZonedTime(utcTime, TIME_ZONE)
+          const hour = beijingTime.getHours()
+
+          if (hour >= 6 && hour < 12) {
+            stats.morning += commitCount
+          } else if (hour >= 12 && hour < 18) {
+            stats.daytime += commitCount
+          } else if (hour >= 18 && hour < 24) {
+            stats.evening += commitCount
+          } else {
+            stats.night += commitCount
+          }
         }
       }
     }
@@ -69,19 +73,35 @@ async function getCommitTimes() {
 function generateMarkdown(stats) {
   const getPercent = num => (stats.total === 0 ? 0 : ((num / stats.total) * 100).toFixed(1))
   const getBar = percent => {
-    const filled = Math.round(percent / 5) // 每5%填充一个方块，总长度20个
+    const filled = Math.round(percent / 5)
     return '█'.repeat(filled) + '░'.repeat(20 - filled)
   }
 
-  // Show update time in Beijing Time
   const now = new Date()
   const beijingNow = utcToZonedTime(now, TIME_ZONE)
   const updateTime = format(beijingNow, 'yyyy-MM-dd HH:mm:ss', { timeZone: TIME_ZONE })
 
-  return `🌞 Morning    ${stats.morning} commits    ${getBar(getPercent(stats.morning))}    ${getPercent(stats.morning)}%
-🏙️ Daytime    ${stats.daytime} commits    ${getBar(getPercent(stats.daytime))}    ${getPercent(stats.daytime)}%
-🌆 Evening    ${stats.evening} commits    ${getBar(getPercent(stats.evening))}    ${getPercent(stats.evening)}%
-🌙 Night      ${stats.night} commits    ${getBar(getPercent(stats.night))}    ${getPercent(stats.night)}%
+  const lines = [
+    { emoji: '🌞', label: 'Morning', count: stats.morning },
+    { emoji: '🏙️', label: 'Daytime', count: stats.daytime },
+    { emoji: '🌆', label: 'Evening', count: stats.evening },
+    { emoji: '🌙', label: 'Night', count: stats.night },
+  ]
+
+  const countWidth = Math.max(3, ...lines.map(l => String(l.count).length))
+
+  const content = lines
+    .map(({ emoji, label, count }) => {
+      const percent = getPercent(count)
+      const col1 = `${emoji} ${label.padEnd(7)}`
+      const col2 = `${String(count).padStart(countWidth)} commits`
+      const col3 = getBar(percent)
+      const col4 = `${String(percent).padStart(5)}%`
+      return `${col1}   ${col2}   ${col3}   ${col4}`
+    })
+    .join('\n')
+
+  return `${content}
 > Last Updated: ${updateTime}
 `
 }
