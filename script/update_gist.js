@@ -32,67 +32,51 @@ async function getCommitTimes() {
       total: 0,
     }
 
-    let totalEvents = 0
-    let pushEventCount = 0
+    const since = new Date()
+    since.setDate(since.getDate() - 365)
+    const sinceStr = since.toISOString().split('T')[0]
 
-    for (let page = 1; page <= 3; page++) {
-      const { data: events } = await octokit.activity.listEventsForAuthenticatedUser({
-        username,
+    for (let page = 1; page <= 10; page++) {
+      const { data } = await octokit.request('GET /search/commits', {
+        q: `author:${username} author-date:>${sinceStr}`,
+        sort: 'author-date',
+        order: 'desc',
         per_page: 100,
         page,
       })
 
-      console.log(`Page ${page}: fetched ${events.length} events`)
-      if (events.length === 0) break
-      totalEvents += events.length
+      if (page === 1) {
+        console.log(`🔍 Search found ${data.total_count} commits in the last year`)
+      }
 
-      for (const event of events) {
-        if (event.type === 'PushEvent') {
-          pushEventCount++
+      const items = data.items || []
+      if (items.length === 0) break
 
-          if (pushEventCount <= 3) {
-            console.log(`🔍 PushEvent #${pushEventCount} payload keys: ${Object.keys(event.payload || {})}`)
-            console.log(`   payload.size=${event.payload?.size}, payload.distinct_size=${event.payload?.distinct_size}`)
-            console.log(`   payload.commits type=${typeof event.payload?.commits}, isArray=${Array.isArray(event.payload?.commits)}, length=${event.payload?.commits?.length}`)
-            console.log(`   event.created_at=${event.created_at}, repo=${event.repo?.name}`)
-          }
+      for (const item of items) {
+        const authorDate = new Date(item.commit.author.date)
+        const beijingTime = utcToZonedTime(authorDate, TIME_ZONE)
+        const hour = beijingTime.getHours()
 
-          const payload = event.payload || {}
-          const commitCount = (Array.isArray(payload.commits) && payload.commits.length > 0)
-            ? payload.commits.length
-            : (payload.size || payload.distinct_size || 1)
-          stats.total += commitCount
-
-          const utcTime = new Date(event.created_at)
-          const beijingTime = utcToZonedTime(utcTime, TIME_ZONE)
-          const hour = beijingTime.getHours()
-
-          if (hour >= 6 && hour < 12) {
-            stats.morning += commitCount
-          } else if (hour >= 12 && hour < 18) {
-            stats.daytime += commitCount
-          } else if (hour >= 18 && hour < 24) {
-            stats.evening += commitCount
-          } else {
-            stats.night += commitCount
-          }
+        stats.total++
+        if (hour >= 6 && hour < 12) {
+          stats.morning++
+        } else if (hour >= 12 && hour < 18) {
+          stats.daytime++
+        } else if (hour >= 18 && hour < 24) {
+          stats.evening++
+        } else {
+          stats.night++
         }
       }
+
+      if (items.length < 100) break
     }
 
-    console.log(`📊 Total events: ${totalEvents}, PushEvents: ${pushEventCount}, Commits: ${stats.total}`)
-    if (totalEvents === 0) {
-      console.warn('⚠️  No events found. Token likely needs broader permissions:')
-      console.warn('   - Fine-grained PAT: set Repository access to "All repositories"')
-      console.warn('   - Or use a Classic PAT with "repo" + "gist" scopes')
-    }
+    console.log(`📊 Counted ${stats.total} commits (Morning: ${stats.morning}, Daytime: ${stats.daytime}, Evening: ${stats.evening}, Night: ${stats.night})`)
 
     return stats
   } catch (error) {
     console.error('Failed to get commit data: ', error.message)
-    if (error.status === 401 || error.status === 403) {
-      console.error('🔑 Token authentication failed. Check GIST_TOKEN in repository secrets.')
-    }
     throw error
   }
 }
@@ -126,8 +110,7 @@ function generateMarkdown(stats) {
       const col1 = `${emoji} ${label.padEnd(7)}`
       const col2 = `${String(count).padStart(countWidth)} commits`
       const col3 = getBar(percent)
-      const col4 = `${String(percent).padStart(5)}%`
-      return `${col1}   ${col2}   ${col3}   ${col4}`
+      return `${col1}   ${col2}   ${col3}`
     })
     .join('\n')
 
