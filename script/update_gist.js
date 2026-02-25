@@ -78,10 +78,10 @@ function generateMarkdown(stats) {
   const beijingNow = utcToZonedTime(now, TIME_ZONE)
   const updateTime = format(beijingNow, 'yyyy-MM-dd HH:mm:ss', { timeZone: TIME_ZONE })
 
-  return `1. 🌞 Morning    ${stats.morning} commits    ${getBar(getPercent(stats.morning))}    ${getPercent(stats.morning)}%
-2. 🏙️ Daytime    ${stats.daytime} commits    ${getBar(getPercent(stats.daytime))}    ${getPercent(stats.daytime)}%
-3. 🌆 Evening    ${stats.evening} commits    ${getBar(getPercent(stats.evening))}    ${getPercent(stats.evening)}%
-4. 🌙 Night      ${stats.night} commits     ${getBar(getPercent(stats.night))}    ${getPercent(stats.night)}%
+  return `🌞 Morning    ${stats.morning} commits    ${getBar(getPercent(stats.morning))}    ${getPercent(stats.morning)}%
+🏙️ Daytime    ${stats.daytime} commits    ${getBar(getPercent(stats.daytime))}    ${getPercent(stats.daytime)}%
+🌆 Evening    ${stats.evening} commits    ${getBar(getPercent(stats.evening))}    ${getPercent(stats.evening)}%
+🌙 Night      ${stats.night} commits    ${getBar(getPercent(stats.night))}    ${getPercent(stats.night)}%
 > Last Updated: ${updateTime}
 `
 }
