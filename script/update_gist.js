@@ -76,7 +76,7 @@ function generateMarkdown(stats) {
   // Show update time in Beijing Time
   const now = new Date()
   const beijingNow = utcToZonedTime(now, TIME_ZONE)
-  const updateTime = format(beijingNow, 'yyyy-MM-dd HH:mm:ss (Beijing Time)', { timeZone: TIME_ZONE })
+  const updateTime = format(beijingNow, 'yyyy-MM-dd HH:mm:ss', { timeZone: TIME_ZONE })
 
   return `1. 🌞 Morning    ${stats.morning} commits    ${getBar(getPercent(stats.morning))}    ${getPercent(stats.morning)}%
 2. 🏙️ Daytime    ${stats.daytime} commits    ${getBar(getPercent(stats.daytime))}    ${getPercent(stats.daytime)}%
