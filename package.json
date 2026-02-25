@@ -1,0 +1,8 @@
+{
+  "name": "gist-updater",
+  "version": "1.0.0",
+  "dependencies": {
+    "@octokit/rest": "^20.0.2",
+    "date-fns-tz": "^2.0.0"
+  }
+}
