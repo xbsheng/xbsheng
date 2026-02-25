@@ -18,7 +18,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install @octokit/rest dotenv date-fns-tz
+        run: npm install
 
       - name: Run update script
         env:
