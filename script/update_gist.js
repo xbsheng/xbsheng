@@ -49,8 +49,7 @@ async function getCommitTimes() {
       for (const event of events) {
         if (event.type === 'PushEvent') {
           pushEventCount++
-          const commits = event.payload?.commits || []
-          const commitCount = commits.length
+          const commitCount = event.payload?.commits?.length || event.payload?.size || 0
           stats.total += commitCount
 
           const utcTime = new Date(event.created_at)
