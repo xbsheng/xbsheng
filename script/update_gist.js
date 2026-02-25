@@ -73,6 +73,8 @@ function generateMarkdown(stats) {
     return '█'.repeat(filled) + '░'.repeat(20 - filled)
   }
 
+  const updateTime = format(beijingNow, 'yyyy-MM-dd HH:mm:ss (Beijing Time)', { timeZone: TIME_ZONE })
+
   return `1. 🌞 Morning    ${stats.morning} commits    ${getBar(getPercent(stats.morning))}    ${getPercent(stats.morning)}%
 2. 🏙️ Daytime    ${stats.daytime} commits    ${getBar(getPercent(stats.daytime))}    ${getPercent(stats.daytime)}%
 3. 🌆 Evening    ${stats.evening} commits    ${getBar(getPercent(stats.evening))}    ${getPercent(stats.evening)}%
