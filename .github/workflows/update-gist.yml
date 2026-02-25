@@ -1,0 +1,28 @@
+name: Update Gist
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch: # allows to manually run the job at any time
+
+jobs:
+  update-gist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install @octokit/rest dotenv date-fns-tz
+
+      - name: Run update script
+        env:
+          GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: '670ac11914309f608f713aeca9794cb9'
+          GH_USERNAME: ${{ github.repository_owner }}
+        run: node script/update_gist.js
