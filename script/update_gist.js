@@ -19,6 +19,11 @@ const octokit = new Octokit({
  */
 async function getCommitTimes() {
   try {
+    const { data: user } = await octokit.users.getAuthenticated()
+    console.log(`✅ Authenticated as: ${user.login}`)
+
+    const username = GH_USERNAME || user.login
+
     const stats = {
       morning: 0,
       daytime: 0,
@@ -27,18 +32,23 @@ async function getCommitTimes() {
       total: 0,
     }
 
-    // Paginate through events (GitHub Events API: max 10 pages, 100 per page, 300 events total)
+    let totalEvents = 0
+    let pushEventCount = 0
+
     for (let page = 1; page <= 3; page++) {
       const { data: events } = await octokit.activity.listEventsForAuthenticatedUser({
-        username: GH_USERNAME,
+        username,
         per_page: 100,
         page,
       })
 
+      console.log(`Page ${page}: fetched ${events.length} events`)
       if (events.length === 0) break
+      totalEvents += events.length
 
       for (const event of events) {
         if (event.type === 'PushEvent') {
+          pushEventCount++
           const commits = event.payload?.commits || []
           const commitCount = commits.length
           stats.total += commitCount
@@ -60,9 +70,19 @@ async function getCommitTimes() {
       }
     }
 
+    console.log(`📊 Total events: ${totalEvents}, PushEvents: ${pushEventCount}, Commits: ${stats.total}`)
+    if (totalEvents === 0) {
+      console.warn('⚠️  No events found. Token likely needs broader permissions:')
+      console.warn('   - Fine-grained PAT: set Repository access to "All repositories"')
+      console.warn('   - Or use a Classic PAT with "repo" + "gist" scopes')
+    }
+
     return stats
   } catch (error) {
     console.error('Failed to get commit data: ', error.message)
+    if (error.status === 401 || error.status === 403) {
+      console.error('🔑 Token authentication failed. Check GIST_TOKEN in repository secrets.')
+    }
     throw error
   }
 }
