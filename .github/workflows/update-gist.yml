@@ -2,12 +2,16 @@ name: Update Gist
 
 on:
   schedule:
-    - cron: '0 * * * *'
-  workflow_dispatch: # allows to manually run the job at any time
+    - cron: '45 16 * * *'
+  workflow_dispatch:
 
 jobs:
   update-gist:
+    permissions:
+      contents: read
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -23,6 +27,6 @@ jobs:
       - name: Run update script
         env:
           GIST_TOKEN: ${{ secrets.GIST_TOKEN }}
-          GIST_ID: '670ac11914309f608f713aeca9794cb9'
+          GIST_ID: ${{ vars.GIST_ID }}
           GH_USERNAME: ${{ github.repository_owner }}
         run: node script/update_gist.js

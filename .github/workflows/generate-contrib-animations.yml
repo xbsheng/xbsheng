@@ -1,20 +1,15 @@
-name: generate animation
+name: Generate Contribution Animations
 
 on:
-  # run every hour at minute 0 (e.g., 1:00, 2:00, etc.)
   schedule:
-    - cron: '0 * * * *'
-
-  # allows to manually run the job at any time
+    - cron: '45 16 * * *'
   workflow_dispatch:
-
-  # run on every push on the master branch
   push:
     branches:
       - master
 
 jobs:
-  generate:
+  generate-animations:
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -23,8 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # generates a snake game from a github user (<github_user_name>) contributions graph, output a svg animation at <svg_out_path>
-      - name: generate github-contribution-grid-snake.svg
+      - name: Generate snake contribution SVGs
         uses: Platane/snk/svg-only@v3
         with:
           github_user_name: ${{ github.repository_owner }}
@@ -32,9 +26,8 @@ jobs:
             dist/github-contribution-grid-snake.svg
             dist/github-contribution-grid-snake-dark.svg?palette=github-dark
 
-      # generate a 3D animation of the github contributions graph, and set it as the github profile README
-      # output dir: dist (moved from profile-3d-contrib)
-      - uses: yoshi389111/github-profile-3d-contrib@latest
+      - name: Generate 3D contribution graph
+        uses: yoshi389111/github-profile-3d-contrib@v0.9.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           USERNAME: ${{ github.repository_owner }}
@@ -47,9 +40,7 @@ jobs:
             mv profile-3d-contrib/* dist/ 2>/dev/null || true
           fi
 
-      # push the content of <build_dir> to a branch
-      # the content will be available at https://raw.githubusercontent.com/<github_user>/<repository>/<target_branch>/<file> , or as github page
-      - name: push github-contribution-grid-snake.svg to the output branch
+      - name: Deploy to output branch
         uses: crazy-max/ghaction-github-pages@v3.1.0
         with:
           target_branch: output
