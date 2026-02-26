@@ -1,98 +1,99 @@
-// 引入依赖
 const { Octokit } = require('@octokit/rest')
-const { format, utcToZonedTime } = require('date-fns-tz')
+const { format, toZonedTime } = require('date-fns-tz')
 
-// 从环境变量获取配置
 const GIST_TOKEN = process.env.GIST_TOKEN
 const GIST_ID = process.env.GIST_ID
 const GH_USERNAME = process.env.GH_USERNAME
-const TIME_ZONE = 'Asia/Shanghai' // Beijing Timezone
+const TIME_ZONE = 'Asia/Shanghai'
 
-// 初始化 Octokit 客户端
+const DAYS_LOOKBACK = 365
+const MAX_PAGES = 10
+const PER_PAGE = 100
+const BAR_WIDTH = 20
+const SEARCH_API_LIMIT = MAX_PAGES * PER_PAGE
+
+if (!GIST_TOKEN || !GIST_ID) {
+  console.error('❌ Missing required env: GIST_TOKEN or GIST_ID')
+  process.exit(1)
+}
+
 const octokit = new Octokit({
   auth: GIST_TOKEN,
   userAgent: 'Gist-Updater-Node.js',
 })
 
-/**
- * Step 1: Get and count commit time distribution (Beijing Time)
- */
 async function getCommitTimes() {
-  try {
-    const { data: user } = await octokit.users.getAuthenticated()
-    console.log(`✅ Authenticated as: ${user.login}`)
+  const { data: user } = await octokit.users.getAuthenticated()
+  console.log(`✅ Authenticated as: ${user.login}`)
 
-    const username = GH_USERNAME || user.login
+  const username = GH_USERNAME || user.login
 
-    const stats = {
-      morning: 0,
-      daytime: 0,
-      evening: 0,
-      night: 0,
-      total: 0,
-    }
-
-    const since = new Date()
-    since.setDate(since.getDate() - 365)
-    const sinceStr = since.toISOString().split('T')[0]
-
-    for (let page = 1; page <= 10; page++) {
-      const { data } = await octokit.request('GET /search/commits', {
-        q: `author:${username} author-date:>${sinceStr}`,
-        sort: 'author-date',
-        order: 'desc',
-        per_page: 100,
-        page,
-      })
-
-      if (page === 1) {
-        console.log(`🔍 Search found ${data.total_count} commits in the last year`)
-      }
-
-      const items = data.items || []
-      if (items.length === 0) break
-
-      for (const item of items) {
-        const authorDate = new Date(item.commit.author.date)
-        const beijingTime = utcToZonedTime(authorDate, TIME_ZONE)
-        const hour = beijingTime.getHours()
-
-        stats.total++
-        if (hour >= 6 && hour < 12) {
-          stats.morning++
-        } else if (hour >= 12 && hour < 18) {
-          stats.daytime++
-        } else if (hour >= 18 && hour < 24) {
-          stats.evening++
-        } else {
-          stats.night++
-        }
-      }
-
-      if (items.length < 100) break
-    }
-
-    console.log(`📊 Counted ${stats.total} commits (Morning: ${stats.morning}, Daytime: ${stats.daytime}, Evening: ${stats.evening}, Night: ${stats.night})`)
-
-    return stats
-  } catch (error) {
-    console.error('Failed to get commit data: ', error.message)
-    throw error
+  const stats = {
+    morning: 0,
+    daytime: 0,
+    evening: 0,
+    night: 0,
   }
+
+  const since = new Date()
+  since.setDate(since.getDate() - DAYS_LOOKBACK)
+  const sinceStr = since.toISOString().split('T')[0]
+
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const { data } = await octokit.request('GET /search/commits', {
+      q: `author:${username} author-date:>${sinceStr}`,
+      sort: 'author-date',
+      order: 'desc',
+      per_page: PER_PAGE,
+      page,
+    })
+
+    if (page === 1) {
+      console.log(`🔍 Search found ${data.total_count} commits in the last year`)
+      if (data.total_count > SEARCH_API_LIMIT) {
+        console.warn(`⚠️ Total ${data.total_count} commits, but Search API caps at ${SEARCH_API_LIMIT}`)
+      }
+    }
+
+    const items = data.items || []
+    if (items.length === 0) break
+
+    for (const item of items) {
+      const authorDate = new Date(item.commit.author.date)
+      const beijingTime = toZonedTime(authorDate, TIME_ZONE)
+      const hour = beijingTime.getHours()
+
+      if (hour >= 6 && hour < 12) {
+        stats.morning++
+      } else if (hour >= 12 && hour < 18) {
+        stats.daytime++
+      } else if (hour >= 18 && hour < 24) {
+        stats.evening++
+      } else {
+        stats.night++
+      }
+    }
+
+    if (items.length < PER_PAGE) break
+  }
+
+  const total = stats.morning + stats.daytime + stats.evening + stats.night
+  console.log(
+    `📊 Counted ${total} commits (Morning: ${stats.morning}, Daytime: ${stats.daytime}, Evening: ${stats.evening}, Night: ${stats.night})`,
+  )
+
+  return { ...stats, total }
 }
 
-/**
- * Step 2: Generate content matching the screenshot style
- */
 function generateMarkdown(stats) {
-  const getPercent = num => (stats.total === 0 ? 0 : ((num / stats.total) * 100).toFixed(1))
+  const getPercent = num => (stats.total === 0 ? 0 : (num / stats.total) * 100).toFixed(1)
   const getBar = percent => {
-    const filled = Math.round(percent / 5)
-    return '█'.repeat(filled) + '░'.repeat(20 - filled)
+    const filled = Math.round((percent / 100) * BAR_WIDTH)
+    return '█'.repeat(filled) + '░'.repeat(BAR_WIDTH - filled)
   }
 
   const now = new Date()
-  const beijingNow = utcToZonedTime(now, TIME_ZONE)
+  const beijingNow = toZonedTime(now, TIME_ZONE)
   const updateTime = format(beijingNow, 'yyyy-MM-dd HH:mm:ss', { timeZone: TIME_ZONE })
 
   const lines = [
@@ -119,29 +120,18 @@ function generateMarkdown(stats) {
 `
 }
 
-/**
- * Step 3: Update Gist
- */
 async function updateGist(content) {
-  try {
-    await octokit.gists.update({
-      gist_id: GIST_ID,
-      files: {
-        'commit-habit.md': {
-          content: content,
-        },
+  await octokit.gists.update({
+    gist_id: GIST_ID,
+    files: {
+      'commit-habit.md': {
+        content,
       },
-    })
-    console.log('✅ Gist updated successfully!')
-  } catch (error) {
-    console.error('❌ Failed to update Gist: ', error.message)
-    throw error
-  }
+    },
+  })
+  console.log('✅ Gist updated successfully!')
 }
 
-/**
- * Main function
- */
 async function main() {
   try {
     const stats = await getCommitTimes()
