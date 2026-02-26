@@ -1,5 +1,10 @@
 const { Octokit } = require('@octokit/rest')
-const { format, toZonedTime } = require('date-fns-tz')
+const dayjs = require('dayjs')
+const utc = require('dayjs/plugin/utc')
+const timezone = require('dayjs/plugin/timezone')
+
+dayjs.extend(utc)
+dayjs.extend(timezone)
 
 const GIST_TOKEN = process.env.GIST_TOKEN
 const GIST_ID = process.env.GIST_ID
@@ -59,9 +64,7 @@ async function getCommitTimes() {
     if (items.length === 0) break
 
     for (const item of items) {
-      const authorDate = new Date(item.commit.author.date)
-      const beijingTime = toZonedTime(authorDate, TIME_ZONE)
-      const hour = beijingTime.getHours()
+      const hour = dayjs(item.commit.author.date).tz(TIME_ZONE).hour()
 
       if (hour >= 6 && hour < 12) {
         stats.morning++
@@ -92,9 +95,7 @@ function generateMarkdown(stats) {
     return '█'.repeat(filled) + '░'.repeat(BAR_WIDTH - filled)
   }
 
-  const now = new Date()
-  const beijingNow = toZonedTime(now, TIME_ZONE)
-  const updateTime = format(beijingNow, 'yyyy-MM-dd HH:mm:ss', { timeZone: TIME_ZONE })
+  const updateTime = dayjs().tz(TIME_ZONE).format('YYYY-MM-DD HH:mm:ss')
 
   const lines = [
     { emoji: '🌞', label: 'Morning', count: stats.morning },
