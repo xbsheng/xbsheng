@@ -2,7 +2,7 @@ name: Generate Contribution Animations
 
 on:
   schedule:
-    - cron: '45 16 * * *'
+    - cron: '28 * * * *'
   workflow_dispatch:
   push:
     branches:
