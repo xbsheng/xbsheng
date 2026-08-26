@@ -12,10 +12,12 @@ const GH_USERNAME = process.env.GH_USERNAME
 const TIME_ZONE = 'Asia/Shanghai'
 
 const DAYS_LOOKBACK = 365
+const WINDOW_DAYS = Math.ceil(DAYS_LOOKBACK / 4) // 4 windows, each well under the 1000-result Search API cap
 const MAX_PAGES = 10
 const PER_PAGE = 100
 const BAR_WIDTH = 20
-const SEARCH_API_LIMIT = MAX_PAGES * PER_PAGE
+const REQUEST_DELAY_MS = 2000 // spread requests to avoid burst-triggered secondary rate limits
+const MAX_RETRIES = 2
 
 if (!GIST_TOKEN || !GIST_ID) {
   console.error('❌ Missing required env: GIST_TOKEN or GIST_ID')
@@ -26,6 +28,28 @@ const octokit = new Octokit({
   auth: GIST_TOKEN,
   userAgent: 'Gist-Updater-Node.js',
 })
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+
+async function searchCommits(q, page) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await octokit.request('GET /search/commits', {
+        q,
+        sort: 'author-date',
+        order: 'desc',
+        per_page: PER_PAGE,
+        page,
+      })
+    } catch (err) {
+      const rateLimited = err.status === 403 && /rate limit/i.test(err.message)
+      if (!rateLimited || attempt >= MAX_RETRIES) throw err
+      const wait = 30_000 * (attempt + 1)
+      console.warn(`⚠️ Rate limited, retrying in ${wait / 1000}s...`)
+      await sleep(wait)
+    }
+  }
+}
 
 async function getCommitTimes() {
   const { data: user } = await octokit.users.getAuthenticated()
@@ -40,44 +64,47 @@ async function getCommitTimes() {
     night: 0,
   }
 
-  const since = new Date()
-  since.setDate(since.getDate() - DAYS_LOOKBACK)
-  const sinceStr = since.toISOString().split('T')[0]
+  const now = dayjs()
+  const since = now.subtract(DAYS_LOOKBACK, 'day')
 
-  for (let page = 1; page <= MAX_PAGES; page++) {
-    const { data } = await octokit.request('GET /search/commits', {
-      q: `author:${username} author-date:>${sinceStr}`,
-      sort: 'author-date',
-      order: 'desc',
-      per_page: PER_PAGE,
-      page,
-    })
+  for (let w = 0; w < 4; w++) {
+    const start = since.add(w * WINDOW_DAYS, 'day')
+    let end = start.add(WINDOW_DAYS, 'day').subtract(1, 'day') // exclusive end: no overlap with next window
+    if (end.isAfter(now)) end = now
 
-    if (page === 1) {
-      console.log(`🔍 Search found ${data.total_count} commits in the last year`)
-      if (data.total_count > SEARCH_API_LIMIT) {
-        console.warn(`⚠️ Total ${data.total_count} commits, but Search API caps at ${SEARCH_API_LIMIT}`)
+    const q = `author:${username} author-date:${start.format('YYYY-MM-DD')}..${end.format('YYYY-MM-DD')}`
+
+    for (let page = 1; page <= MAX_PAGES; page++) {
+      if (!(w === 0 && page === 1)) await sleep(REQUEST_DELAY_MS)
+
+      const { data } = await searchCommits(q, page)
+
+      if (page === 1) {
+        console.log(`🔍 [window ${w + 1}/4] ${q}: ${data.total_count} commits`)
+        if (data.total_count > MAX_PAGES * PER_PAGE) {
+          console.warn(`⚠️ ${data.total_count} commits in this window, but Search API caps at ${MAX_PAGES * PER_PAGE}`)
+        }
       }
-    }
 
-    const items = data.items || []
-    if (items.length === 0) break
+      const items = data.items || []
+      if (items.length === 0) break
 
-    for (const item of items) {
-      const hour = dayjs(item.commit.author.date).tz(TIME_ZONE).hour()
+      for (const item of items) {
+        const hour = dayjs(item.commit.author.date).tz(TIME_ZONE).hour()
 
-      if (hour >= 6 && hour < 12) {
-        stats.morning++
-      } else if (hour >= 12 && hour < 18) {
-        stats.daytime++
-      } else if (hour >= 18 && hour < 24) {
-        stats.evening++
-      } else {
-        stats.night++
+        if (hour >= 6 && hour < 12) {
+          stats.morning++
+        } else if (hour >= 12 && hour < 18) {
+          stats.daytime++
+        } else if (hour >= 18 && hour < 24) {
+          stats.evening++
+        } else {
+          stats.night++
+        }
       }
-    }
 
-    if (items.length < PER_PAGE) break
+      if (items.length < PER_PAGE) break
+    }
   }
 
   const total = stats.morning + stats.daytime + stats.evening + stats.night
