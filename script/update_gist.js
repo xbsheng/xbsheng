@@ -67,6 +67,10 @@ async function getCommitTimes() {
   const now = dayjs()
   const since = now.subtract(DAYS_LOOKBACK, 'day')
 
+  // The Search API returns the same commit once per repo that contains it, so a
+  // commit present in N forks is counted N times. Dedupe by SHA.
+  const seenShas = new Set()
+
   for (let w = 0; w < 4; w++) {
     const start = since.add(w * WINDOW_DAYS, 'day')
     let end = start.add(WINDOW_DAYS, 'day').subtract(1, 'day') // exclusive end: no overlap with next window
@@ -90,6 +94,9 @@ async function getCommitTimes() {
       if (items.length === 0) break
 
       for (const item of items) {
+        if (seenShas.has(item.sha)) continue
+        seenShas.add(item.sha)
+
         const hour = dayjs(item.commit.author.date).tz(TIME_ZONE).hour()
 
         if (hour >= 6 && hour < 12) {
